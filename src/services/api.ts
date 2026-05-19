@@ -17,7 +17,7 @@ const api: AxiosInstance = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  withCredentials: true,
+  // withCredentials: true,
 });
 
 // Request interceptor to inject UID header
