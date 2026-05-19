@@ -22,7 +22,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(
     const videoContainer = useRef<HTMLDivElement>(null); // On cible le conteneur (div), pas la video
     const player = useRef<Player | null>(null);
     const { setCurrentTime, setIsPlaying, updateProgress } = usePlayerStore();
-    const videoUrl = `${API_BASE_URL}/videos/${videoId}/file`;
+    const videoUrl = `${API_BASE_URL}/videos/${videoId}/stream?user_uid=${localStorage.getItem('user_uid') ?? ''}`;
 
     const options = useMemo(
       () => ({

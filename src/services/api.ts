@@ -17,6 +17,7 @@ const api: AxiosInstance = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true,
 });
 
 // Request interceptor to inject UID header
@@ -49,6 +50,51 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+// Response interceptor for error handling & AUTO-HEALING
+// api.interceptors.response.use(
+//   (response) => response,
+//   async (error) => {
+//     const originalRequest = error.config;
+
+//     // 1. AUTO-GUÉRISON : Si erreur 401 (Cookie expiré ou absent)
+//     if (error.response?.status === 401 && !originalRequest._retry) {
+//       originalRequest._retry = true; // Pour éviter une boucle infinie
+      
+//       const backupUid = getUID(); // On récupère la sauvegarde dans le localStorage
+
+//       if (backupUid) {
+//         try {
+//           // On demande au backend de restaurer le cookie en utilisant axios "brut" 
+//           // pour ne pas repasser par cet intercepteur en cas d'échec
+//           await axios.post(`${API_BASE_URL}/auth/restore`, { uid: backupUid }, {
+//             withCredentials: true 
+//           });
+
+//           // Si ça réussit, on rejoue la requête initiale qui avait échoué !
+//           return api(originalRequest);
+//         } catch (restoreError) {
+//           // Si la restauration échoue (ex: utilisateur supprimé côté serveur)
+//           clearUID();
+//           return Promise.reject(restoreError);
+//         }
+//       } else {
+//         // Pas de backup, on déconnecte l'utilisateur
+//         clearUID();
+//       }
+//     }
+
+//     // 2. Si c'est un 403 (Accès refusé définitif), on déconnecte
+//     if (error.response?.status === 403) {
+//       const uid = getUID();
+//       if (uid) {
+//         clearUID();
+//       }
+//     }
+
+//     return Promise.reject(error);
+//   }
+// );
 
 // API functions
 export const apiService = {
@@ -151,7 +197,8 @@ export const apiService = {
   // Video Summary
   getVideoSummary: async (videoId: string): Promise<string> => {
     try {
-      const response = await api.get<{ summary: string }>(`/videos/${videoId}/summary`);
+      const uid = getUID();
+      const response = await api.get<{ summary: string }>(`/videos/${videoId}/summary?user_uid=${uid}`);
       return response.data.summary;
     } catch (error) {
       if (axios.isAxiosError(error) && error.response?.status === 404) {
@@ -162,7 +209,8 @@ export const apiService = {
   },
 
   updateVideoSummary: async (videoId: string, summary: string): Promise<string> => {
-    const response = await api.put<{ summary: string }>(`/videos/${videoId}/summary`, {
+    const uid = getUID();
+    const response = await api.put<{ summary: string }>(`/videos/${videoId}/summary?user_uid=${uid}`, {
       summary,
     });
     return response.data.summary;
